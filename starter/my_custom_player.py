@@ -59,7 +59,7 @@ class CustomPlayer(DataPlayer):
             next_move = self.get_opening_move(state)
         else:
             start = timeit.default_timer()
-            next_move = self.get_next_move(state, max_depth=5)
+            next_move = self.get_next_move(state, max_depth=3)
             end = timeit.default_timer()
             took_ms = (end - start) * 1000
             if took_ms > 450:
@@ -96,7 +96,7 @@ class CustomPlayer(DataPlayer):
         if state.terminal_test():
             return state.utility(self.player)
         if depth == 0:
-            return self.liberties_heuristics_keep_enemy_close(state)
+            return heuristics_liberties(state, self.player)
 
         test_board = state.result(move)
 
@@ -128,60 +128,67 @@ class CustomPlayer(DataPlayer):
 
         return best_move
 
-    def liberties_heuristics(self, state: Isolation):
-        own_loc = state.locs[self.player]
-        opp_loc = state.locs[1 - self.player]
-        own_liberties = state.liberties(own_loc)
-        opp_liberties = state.liberties(opp_loc)
-        return len(own_liberties) - len(opp_liberties)
+def heuristics_liberties_player_only(state: Isolation, player: int):
+    """Only # player moves"""
+    own_loc = state.locs[player]
+    own_liberties = state.liberties(own_loc)
+    return len(own_liberties)
 
-    def liberties_heuristics_prioritize_lower_ply_counts(self, state: Isolation):
-        own_loc = state.locs[self.player]
-        opp_loc = state.locs[1 - self.player]
-        own_liberties = state.liberties(own_loc)
-        opp_liberties = state.liberties(opp_loc)
-        return len(own_liberties) - len(opp_liberties) + (state.ply_count)/2
+def heuristics_liberties(state: Isolation, player: int):
+    """# player_moves - # opp_moves"""
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
+    return len(own_liberties) - len(opp_liberties)
 
-    def liberties_heuristics_keep_enemy_close(self, state: Isolation):
-        own_loc = state.locs[self.player]
-        opp_loc = state.locs[1 - self.player]
-        own_liberties = state.liberties(own_loc)
-        opp_liberties = state.liberties(opp_loc)
+def heuristics_liberties_and_prioritize_lower_ply_counts(state: Isolation, player: int):
+    """Use the default # player_moves - # opp_moves but prioritize lower play counts (shorter games)"""
+    own_m_opp_moves = heuristics_liberties(state, player)
+    return own_m_opp_moves + (state.ply_count)/2
 
-        debug_state = DebugState.from_state(state)
-        (own_loc_x, own_loc_y) = debug_state.ind2xy(own_loc)
-        (opp_loc_x, opp_loc_y) = debug_state.ind2xy(opp_loc)
+def heuristics_liberties_and_keep_enemy_close(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
 
-        distance = math.sqrt( (opp_loc_x - own_loc_x)**2 + (opp_loc_y - own_loc_y)**2 )
+    debug_state = DebugState.from_state(state)
+    (own_loc_x, own_loc_y) = debug_state.ind2xy(own_loc)
+    (opp_loc_x, opp_loc_y) = debug_state.ind2xy(opp_loc)
 
-        return len(own_liberties) - len(opp_liberties) - distance/10
+    distance = math.sqrt( (opp_loc_x - own_loc_x)**2 + (opp_loc_y - own_loc_y)**2 )
 
-    def depth_liberties_heuristics(self, state: Isolation):
-        own_loc = state.locs[self.player]
-        opp_loc = state.locs[1 - self.player]
-    
-        own_liberties = state.liberties(own_loc)
-        cnt_own_liberties = len(own_liberties)
-        for loc in own_liberties:
-            cnt_own_liberties += len(state.liberties(loc))
+    return len(own_liberties) - len(opp_liberties) - distance/10
 
-        opp_liberties = state.liberties(opp_loc)
-        cnt_opp_liberties = len(opp_liberties)
-        for loc in opp_liberties:
-            cnt_opp_liberties += len(state.liberties(loc))
+def heuristics_liberties_deep(state: Isolation, player: int):
+    """Use moves possible from current and next possitions"""
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
 
-        return cnt_own_liberties - cnt_opp_liberties
+    own_liberties = state.liberties(own_loc)
+    cnt_own_liberties = len(own_liberties)
+    for loc in own_liberties:
+        cnt_own_liberties += len(state.liberties(loc))
 
-    def liberties_heuristics_conservative(self, state: Isolation):
-        own_loc = state.locs[self.player]
-        opp_loc = state.locs[1 - self.player]
-        own_liberties = state.liberties(own_loc)
-        opp_liberties = state.liberties(opp_loc)
-        return len(own_liberties)*2 - len(opp_liberties)
+    opp_liberties = state.liberties(opp_loc)
+    cnt_opp_liberties = len(opp_liberties)
+    for loc in opp_liberties:
+        cnt_opp_liberties += len(state.liberties(loc))
 
-    def liberties_heuristics_offensive(self, state: Isolation):
-        own_loc = state.locs[self.player]
-        opp_loc = state.locs[1 - self.player]
-        own_liberties = state.liberties(own_loc)
-        opp_liberties = state.liberties(opp_loc)
-        return len(own_liberties) - len(opp_liberties)*2
+    return cnt_own_liberties - cnt_opp_liberties
+
+def heuristics_liberties_conservative(state: Isolation, player: int):
+    """Own moves are more important than enemy moves"""
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
+    return len(own_liberties)*2 - len(opp_liberties)
+
+def heuristics_liberties_offensive(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
+    return len(own_liberties) - len(opp_liberties)*2
