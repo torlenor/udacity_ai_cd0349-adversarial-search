@@ -2,6 +2,7 @@
 #                    YOU DO NOT NEED TO MODIFY THIS FILE                      #
 ###############################################################################
 import argparse
+import datetime
 import logging
 import math
 import os
@@ -13,7 +14,10 @@ from multiprocessing.pool import ThreadPool as Pool
 
 from isolation import Isolation, Agent, play
 from sample_players import RandomPlayer, GreedyPlayer, MinimaxPlayer
+
+import my_custom_player
 from my_custom_player import CustomPlayer
+
 
 logger = logging.getLogger(__name__)
 
@@ -180,9 +184,17 @@ if __name__ == "__main__":
         '-t', '--time_limit', type=int, default=TIME_LIMIT,
         help="Set the maximum allowed time (in milliseconds) for each call to agent.get_action()."
     )
-    args = parser.parse_args()
+    parser.add_argument(
+        '-e', '--heuristics', type=str, default='heuristics_liberties', choices=list(my_custom_player.HEURISTICS_FUNCTIONS.keys()),
+        help="""\
+            Choose the heuristics function for the custom player MINIMAX algorithm
+        """
+    )
 
-    logging.basicConfig(filename="matches.log", filemode="w", level=logging.DEBUG)
+    args = parser.parse_args()
+    my_custom_player.HEURISTIC_FUNC = my_custom_player.HEURISTICS_FUNCTIONS[args.heuristics]
+
+    logging.basicConfig(filename="./results/" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + str(my_custom_player.HEURISTIC_FUNC.__name__) + ".log", filemode="w", level=logging.DEBUG)
     logging.info(
         "Search Configuration:\n" +
         "Opponent: {}\n".format(args.opponent) +
@@ -190,7 +202,11 @@ if __name__ == "__main__":
         "Fair Matches: {}\n".format(args.fair_matches) +
         "Time Limit: {}\n".format(args.time_limit) +
         "Processes: {}\n".format(args.processes) +
-        "Debug Mode: {}".format(args.debug)
+        "Debug Mode: {}\n".format(args.debug) +
+        "Custom Player Heuristics Function: {}\n".format(str(my_custom_player.HEURISTIC_FUNC.__name__)) + 
+        "-------------------------------------------------------------------\n"
     )
+
+    print(str(my_custom_player.HEURISTIC_FUNC.__name__))
 
     main(args)
