@@ -87,7 +87,6 @@ The baseline heuristics is defined by the number of player moves - number of opp
 
 \begin{lstlisting}[language=python]
 def heuristics_liberties(state: Isolation, player: int):
-    """# player_moves - # opp_moves"""
     own_loc = state.locs[player]
     opp_loc = state.locs[1 - player]
     own_liberties = state.liberties(own_loc)
@@ -95,42 +94,181 @@ def heuristics_liberties(state: Isolation, player: int):
     return len(own_liberties) - len(opp_liberties)
 \end{lstlisting}
 
-\subsection*{Number of player moves only}
+\subsection*{Liberties: Number of available player moves only}
 To define an even simpler heuristics, we use only the number of player moves possible from the current position.
 
 \begin{lstlisting}[language=python]
 def heuristics_liberties_player_only(state: Isolation, player: int):
-    """Only # player moves"""
     own_loc = state.locs[player]
     own_liberties = state.liberties(own_loc)
     return len(own_liberties)
 \end{lstlisting}
 
-\subsection*{Number of opponent moves only}
-A simple heuristic only considering number of opponent moves
+\subsection*{Liberties: Number of available opponent moves only}
+Another heuristic, but this time only taking into account the number of possible opponent moves.
+
+\begin{lstlisting}[language=python]
+def heuristics_liberties_opponent_only(state: Isolation, player: int):
+    opp_loc = state.locs[1 - player]
+    opp_liberties = state.liberties(opp_loc)
+    return -len(opp_liberties)
+\end{lstlisting}
 
 \subsection*{Number of play counts: Favor longer games}
 Prioritize higher play counts (longer games)
 
+\begin{lstlisting}[language=python]
+def heuristics_prioritize_higher_ply_counts(state: Isolation, player: int):
+    return state.ply_count
+\end{lstlisting}
+
 \subsection*{Number of play counts: Favor shorter games}
 Prioritize lower play counts (shorter games)
+
+\begin{lstlisting}[language=python]
+def heuristics_prioritize_lower_ply_counts(state: Isolation, player: int):
+    return -state.ply_count
+\end{lstlisting}
+
+\subsection*{Keep the opponent close}
+Keeping the enemy close.
+
+\begin{lstlisting}[language=python]
+def heuristics_keep_enemy_close(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+
+    debug_state = DebugState.from_state(state)
+    (own_loc_x, own_loc_y) = debug_state.ind2xy(own_loc)
+    (opp_loc_x, opp_loc_y) = debug_state.ind2xy(opp_loc)
+    distance = (opp_loc_x - own_loc_x) ** 2 + (opp_loc_y - own_loc_y) ** 2
+
+    return -distance
+\end{lstlisting}
+
+\subsection*{Keep the opponent far}
+Keeping the enemy far.
+
+\begin{lstlisting}[language=python]
+def heuristics_keep_enemy_far(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+
+    debug_state = DebugState.from_state(state)
+    (own_loc_x, own_loc_y) = debug_state.ind2xy(own_loc)
+    (opp_loc_x, opp_loc_y) = debug_state.ind2xy(opp_loc)
+    distance = (opp_loc_x - own_loc_x) ** 2 + (opp_loc_y - own_loc_y) ** 2
+
+    return distance
+\end{lstlisting}
 
 \subsection*{Baseline + keep the opponent close}
 Baseline while keeping the enemy close.
 
+\begin{lstlisting}[language=python]
+def heuristics_liberties_and_keep_enemy_close(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
+
+    debug_state = DebugState.from_state(state)
+    (own_loc_x, own_loc_y) = debug_state.ind2xy(own_loc)
+    (opp_loc_x, opp_loc_y) = debug_state.ind2xy(opp_loc)
+    distance = math.sqrt((opp_loc_x - own_loc_x) ** 2 + (opp_loc_y - own_loc_y) ** 2)
+
+    return len(own_liberties) - len(opp_liberties) - FACTOR*distance
+\end{lstlisting}
+
+The FACTOR variable was varied. The best possible value for it was found to be $FACTOR=1/12$.
+
 \subsection*{Baseline + keep the opponent far}
 Baseline while keeping the enemy far.
+
+\begin{lstlisting}[language=python]
+def heuristics_liberties_and_keep_enemy_far(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
+
+    debug_state = DebugState.from_state(state)
+    (own_loc_x, own_loc_y) = debug_state.ind2xy(own_loc)
+    (opp_loc_x, opp_loc_y) = debug_state.ind2xy(opp_loc)
+    distance = math.sqrt((opp_loc_x - own_loc_x) ** 2 + (opp_loc_y - own_loc_y) ** 2)
+
+    return len(own_liberties) - len(opp_liberties) + distance / 10
+\end{lstlisting}
 
 \subsection*{``Deeper'' baseline heuristics}
 Evaluate number of possible moves from current and next positions
 
+\begin{lstlisting}[language=python]
+def heuristics_liberties_deep(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+
+    own_liberties = state.liberties(own_loc)
+    cnt_own_liberties = len(own_liberties)
+    for loc in own_liberties:
+        cnt_own_liberties += len(state.liberties(loc))
+
+    opp_liberties = state.liberties(opp_loc)
+    cnt_opp_liberties = len(opp_liberties)
+    for loc in opp_liberties:
+        cnt_opp_liberties += len(state.liberties(loc))
+
+    return cnt_own_liberties - cnt_opp_liberties
+\end{lstlisting}
+
 \subsection*{Conservative baseline}
 Own moves are more important than enemy moves
+
+\begin{lstlisting}[language=python]
+def heuristics_liberties_conservative(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
+
+    return len(own_liberties) * 2 - len(opp_liberties)
+\end{lstlisting}
 
 \subsection*{Aggressive baseline}
 Prefer tactics where we starve the opponents moves
 
+\begin{lstlisting}[language=python]
+def heuristics_liberties_aggressive(state: Isolation, player: int):
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
+
+    return len(own_liberties) - len(opp_liberties) * 2
+\end{lstlisting}
+
 \section{Results}
+
+\begin{table}[H]
+    \centering
+    \caption{Win percentage of the various heuristic functions against the default MINIMAX algorithm. The games where always played in fair mode.}
+    \label{tab:win_percentage_heuristics}
+    \begin{ruledtabular}
+        \begin{tabular}{l|l|r|r|r}
+            Heuristic                   & Rounds  & Fair mode     & Win percentage    & Notes \\
+            \toprule
+            Baseline                    & 1000+1000 & Yes           & 50.8\%            & -     \\
+            Liberties: Opponent only    & 1000+1000 & Yes           & 32.4\%            & -     \\
+            Liberties: Player only      & 1000+1000 & Yes           & ----\%            & -     \\
+            Keep enemy close            & 1000+1000 & Yes           & ----\%            & -     \\
+            Keep enemy far              & 1000+1000 & Yes           & ----\%            & -     \\
+            Baseline + keep enemy close & 1000+1000 & Yes           & ----\%            & -     \\
+            Baseline + keep enemy far   & 1000+1000 & Yes           & ----\%            & -     \\
+            Lower play counts           & 1000+1000 & Yes           & ----\%            & -     \\
+            Higher play counts          & 1000+1000 & Yes           & ----\%            & -     \\
+        \end{tabular}
+    \end{ruledtabular}
+\end{table}
 
 \section{Influence of the search depth on the win percentage}
 
