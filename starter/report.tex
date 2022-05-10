@@ -1,0 +1,156 @@
+\documentclass[aps,prd,notitlepage,floatfix,superscriptaddress,groupedaddress,nofootinbib]{revtex4-1}
+\usepackage{graphicx}  % needed for figures
+\usepackage{dcolumn}   % needed for some tables
+\usepackage{bm}        % for math
+\usepackage{amssymb}   % for math
+\usepackage{amsmath}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{soul}
+\usepackage{natbib}
+% \usepackage{booktabs}
+\usepackage[singlelinecheck=false, justification=centering]{caption}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\lstset{basicstyle=\ttfamily,
+  showstringspaces=false,
+  commentstyle=\color{red},
+  keywordstyle=\color{blue}
+}
+
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-}
+\usepackage{breakurl}
+\usepackage[breaklinks]{hyperref}
+
+\usepackage[autostyle]{csquotes}
+
+\usepackage[printonlyused, nohyperlinks, withpage]{acronym}
+
+\newcommand{\jscomment}[1]{\colorbox{gray}{\textcolor{yellow}{#1}}}
+\newcommand{\jsedit}[2]{\jscomment{\st{#1}}\jscomment{#2}}
+
+
+\begin{document}
+
+\title{Report on Udacity AI Nanodegree project 3:\\Adversarial search}
+
+\author{Hans-Peter Schadler}
+% \affiliation{Austria}
+
+\date{\today}
+
+
+\begin{abstract}
+    In this project we are developing an AI agent for the game Isolation, a fully observable, adversarial and deterministic board game.
+    We will implement the MINIMAX algorithm with Alpha-Beta pruning and analyze the performance of various search techniques and heuristics for the agent.
+\end{abstract}
+
+% \pacs{}
+\maketitle
+
+% \tableofcontents
+
+% \newpage
+
+% \makeatletter
+% \let\toc@pre\relax
+% \let\toc@post\relax
+% \makeatother
+
+% \newpage
+\section{Problem analysis}
+
+The assignment is to implement a MINIMAX agent for the game Isolation in \textit{custom\_agent.py}
+and then pick one of three experiments (1. Custom heuristics, 2. Opening book or 3. Advanced search techniques).
+For this assignment I decided to pick the first topic, developing a custom heuristic and perform various analyses to
+assess its effectiveness.
+
+All the evaluation runs where performed on a Dell XPS 13 with the following specs:
+\begin{itemize}[nosep]
+    \item Linux Mint 20.2 Cinnamon
+    \item Kernel version 5.14.0-1032-oem
+    \item Intel Core i7-1165G7 @ 2.80GHz (4 cores + HT)
+    \item 16 GiB memory
+\end{itemize}
+If not otherwise mentioned, the \textit{run\_search.py} script was always ran with the default
+time limit of 150ms and with the \textit{fair\_matches.py} option enabled.
+
+\section{Definition of the heuristics}
+
+In this section, we will define and describe the various heuristics that we tested during this project.
+
+\subsection{Baseline}
+The baseline heuristics is defined by the number of player moves - number of opp moves. It is the heuristics implemented in the sample player MINIMAX algorithm and is implemented also for our custom player in a similar manner. This will serve as the baseline for our comparison.
+
+\begin{lstlisting}[language=python]
+def heuristics_liberties(state: Isolation, player: int):
+    """# player_moves - # opp_moves"""
+    own_loc = state.locs[player]
+    opp_loc = state.locs[1 - player]
+    own_liberties = state.liberties(own_loc)
+    opp_liberties = state.liberties(opp_loc)
+    return len(own_liberties) - len(opp_liberties)
+\end{lstlisting}
+
+\subsection*{Number of player moves only}
+To define an even simpler heuristics, we use only the number of player moves possible from the current position.
+
+\begin{lstlisting}[language=python]
+def heuristics_liberties_player_only(state: Isolation, player: int):
+    """Only # player moves"""
+    own_loc = state.locs[player]
+    own_liberties = state.liberties(own_loc)
+    return len(own_liberties)
+\end{lstlisting}
+
+\subsection*{Number of opponent moves only}
+A simple heuristic only considering number of opponent moves
+
+\subsection*{Number of play counts: Favor longer games}
+Prioritize higher play counts (longer games)
+
+\subsection*{Number of play counts: Favor shorter games}
+Prioritize lower play counts (shorter games)
+
+\subsection*{Baseline + keep the opponent close}
+Baseline while keeping the enemy close.
+
+\subsection*{Baseline + keep the opponent far}
+Baseline while keeping the enemy far.
+
+\subsection*{``Deeper'' baseline heuristics}
+Evaluate number of possible moves from current and next positions
+
+\subsection*{Conservative baseline}
+Own moves are more important than enemy moves
+
+\subsection*{Aggressive baseline}
+Prefer tactics where we starve the opponents moves
+
+\section{Results}
+
+\section{Influence of the search depth on the win percentage}
+
+\section{Conclusion}
+
+% \begin{figure}[tbh!]
+%     %\vspace*{-0.5em}
+%     \centering
+%     \includegraphics[width=0.7\linewidth]{images/problem_1_time.pdf}
+%     \caption{Runtime vs. algorithm for problem 1}
+%     \label{fig:p1_runtime}
+% \end{figure}
+
+% \appendix
+
+% \section{\label{app:some_appendix}Some appendix}
+
+% \newpage
+\bibliographystyle{unsrtnat}
+%\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
