@@ -1,0 +1,7 @@
+*.aux
+*.fdb_*
+*.fls
+report.log
+report.out
+report.synctex.gz
+reportNotes.bib
