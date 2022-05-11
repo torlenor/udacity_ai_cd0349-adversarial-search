@@ -81,6 +81,7 @@ In this section, we will define and describe the various heuristics that we test
     \item Number of possible opponent moves
     \item Play count
     \item Player positions on the board (for example to determine their distance)
+    \item The board itself
 \end{itemize}
 and we will use various combinations of these in our heuristics.
 
@@ -165,7 +166,7 @@ def heuristics_keep_enemy_far(state: Isolation, player: int):
 \end{lstlisting}
 
 \subsection*{Baseline + keep the opponent close}
-Combining the baseline and the distance definition allows us to consider the liberties (which is a quite good heuristic) and combine it with more information about the board. Here we want to stay close to the enemy, if possible.
+Combining the baseline and the distance definition allows us to incorporate more information about the board. Here we want to stay close to the enemy, if possible.
 
 \begin{lstlisting}[language=python]
 def heuristics_liberties_and_keep_enemy_close(state: Isolation, player: int):
@@ -185,7 +186,7 @@ def heuristics_liberties_and_keep_enemy_close(state: Isolation, player: int):
 The FACTOR variable determined via a very simple grid search and the best value of $1/8$ was used for the comparison run.
 
 \subsection*{Baseline + keep the opponent far}
-Combining the baseline and the distance definition allows us to consider the liberties (which is a quite good heuristic) and combine it with more information about the board. Here we want to stay far from to the enemy, if possible.
+Combining the baseline and the distance definition allows us to incorporate more information about the board. Here we want to stay far from to the enemy, if possible.
 
 \begin{lstlisting}[language=python]
 def heuristics_liberties_and_keep_enemy_far(state: Isolation, player: int):
@@ -229,7 +230,7 @@ def heuristics_liberties_aggressive(state: Isolation, player: int):
 \end{lstlisting}
 
 \subsection*{``Deeper'' baseline heuristics}
-This heuristics counts the number of possible moves from current position and also from all the possible following positions on the current game board. While this is of course not as accurate as playing the move, because positions could be blocked after the next moves, it is worth a try, because it is relatively cheap and, as we will see later, It seems to be performing very well. Compared with others, it is more expensive, so one has to be careful not to violate the time constraints. On our system the 150ms was still enough to perform the MINIMAX search.
+This heuristics counts the number of possible moves from current position and also from all the possible following positions on the current game board. While this is of course not as accurate as playing the move, because positions could be blocked after the next moves, it is worth a try, because it is relatively cheap and, as we will see later, it seems to be performing very well. Compared with others, it is more expensive, so one has to be careful not to violate the time constraints. On our system the 150ms was still enough to perform the MINIMAX search.
 
 \begin{lstlisting}[language=python]
 def heuristics_liberties_deep(state: Isolation, player: int):
@@ -281,9 +282,9 @@ While the very simple approach of only taking the own possible moves into accoun
 
 What did work a bit better than baseline, was considering a more aggressive baseline approach where we favor moves where we reduce the possible number of opponents moves. There we achieved a win percentage of 51.8\%. The opposite approach, the conservative baseline heuristics, performed slightly worse than baseline.
 
-More interesting heuristics functions are based on the positions of the players on the board and their distance from one another. These we investigate with the ``keep enemies close'' and ``keep enemies far'' heuristics. The ``keep enemies far'' was not so surprising, because it was in about the same ballpark as the player count heuristics. But the ``keep enemies close'' heuristics showed a very promising trend: With 34.1\% it performed quite well! So we decided to combine these distance based heuristics with our baseline heuristic. Especially the combination of the baseline heuristic while keeping the enemy close was performing very well. After tuning the strength of the influence of the distance, we achieved a win percentage of 54.8\%, which was significantly higher than the baseline, and the second highest in total for our heuristics comparisons.
+More interesting heuristics functions are based on the positions of the players on the board and their distance from one another. These we investigate with the ``keep enemies close'' and ``keep enemies far'' heuristics. The ``keep enemies far'' was not so surprising, because it was in about the same ballpark as the player count heuristics. But the ``keep enemies close'' heuristics showed a very promising trend: With 34.1\% it performed quite well! So we decided to combine this distance based heuristics with our baseline and it was performing very well. After tuning the strength of the influence of the distance, we achieved a win percentage of 54.8\%, which was significantly higher than the baseline, and the second highest in total for our heuristics comparisons.
 
-Another interesting approach was to consider not just the number of possible moves from the current position for player and opponent, but also considering the moves going from there. This led to the ``deeper'' baseline heuristics. This outperformed our baseline algorithm by far. While it is more expensive, it was still within the time limit of 150ms.
+Another interesting approach was to consider not just the number of possible moves from the current position for player and opponent, but also considering the moves going from there. This led to the ``deeper'' baseline heuristics. This outperformed our baseline algorithm by far. While it is more expensive, it was still within the time limit of 150ms and it can be considered to be a cheaper search depth increase, because the moves are not played out.
 
 \section{\label{sec:search_depth}Influence of the search depth on the win percentage}
 
@@ -297,21 +298,21 @@ Another interesting approach was to consider not just the number of possible mov
 
 Besides the heuristics function, the search depth of the MINIMAX algorithm has a massive impact on the win percentage. To study this is more detail, we performed various runs with our baseline heuristic while varying the search depth of our MINIMAX algorithm. In Figure \ref{fig:search_depth} we show the results.
 
-As it is clear from this plot, the search depth is a very important influence on the win percentage. When we play with a very low search depth of 1, the win percentage falls down to 28.5\%. On the other hand, if we increase the search depth to 4 we achieve a win percentage of 54.2\%. When we go up to a search depth of 5, we already violate the time constraint of 150ms slightly in a few cases. Nevertheless, using such an high search depth gives us a win percentage of 65.1\%. Out of curiosity, we combined the search depth of 4 with our, still quite cheep, baseline + keep enemy close heuristic. With this combination, we achieved a win percentage of 56.5\%, while still staying within the time limit of 150ms at all times, which would make this our best result inside the time limit.
+As it is clear from this plot, the search depth has a very important influence on the win percentage. When we play with a very low search depth of 1, the win percentage falls down to 28.5\%. On the other hand, if we increase the search depth to 4 we achieve a win percentage of 54.2\%. When we go up to a search depth of 5, we already violate the time constraint of 150ms slightly in a few cases. Nevertheless, using such an high search depth gives us a win percentage of 65.1\%. Out of curiosity, we combined the search depth of 4 with our, still quite cheep, baseline + keep enemy close heuristic. With this combination, we achieved a win percentage of 56.5\%, while still staying within the time limit of 150ms at all times, which would make this our best result inside the time limit.
 
 \section{Conclusion}
 
-From these experiments we saw that the heuristic function is a very important part in the implementation of an adversarial agent. While already simple heuristics can when games, investigating various approaches can be very beneficial. The incorporation of cheap, already existing information, like the position of the players on the board, can lead to better heuristics and to algorithms which can perform better in tight time constraints, where increasing the search depth is no option. Choosing heuristic functions poorly, or using features which only appear to be relevant at first glance, can drastically influence the win percentage of such an agent. The winner of our heuristics comparison was by far the ``deeper'' baseline approach. A cheaper, but still good, heuristics is the baseline heuristics which tries to keep the enemy close at the same time. All the other investigated heuristics performed en par or worse than the baseline.
+From these experiments we saw that the heuristic function plays a crucial part in the implementation of an adversarial agent. While already simple heuristics can win games, investigating various approaches can be very beneficial. The incorporation of cheap, already existing information, like the position of the players on the board, can lead to better heuristics and to algorithms which can perform better in tight time constraints, where increasing the search depth is no option. Choosing heuristic functions poorly, or using features which only appear to be relevant at first glance, can negatively influence the win percentage of such an agent. The winner of our heuristics comparison was by far the ``deeper'' baseline approach. A cheaper, but still good, heuristics is the baseline heuristics which tries to keep the enemy close at the same time. All the other investigated heuristics performed en par or worse than baseline.
 
 \section{Questions}
 
 \subsection{What features of the game does your heuristic incorporate, and why do you think those features matter in evaluating states during search?}
 
-While the play count would in principle be an interesting quantity to consider for deciding which heuristics to choose in which part of the game (early game vs. late game), the most interesting feature was the positions of the player and the opponent on the board. By just looking at the distance between the two players we could improve our baseline heuristics drastically. If one things about it, it also makes sense that the positions on the board matter. It is unclear, however, if following the opponent is the only good way of using this information, it turned out to be working quite well. Most likely also other heuristics based on the positions of the player and the opponent could be constructed which could help winning games, like keeping in the center of the board and could be worth an additional study.
+While the play count would in principle be an interesting quantity to consider for deciding which heuristics to choose in which part of the game (early game vs. late game), the most interesting feature was the positions of the player and the opponent on the board. By just looking at the distance between the two players we could improve our baseline heuristics drastically. If one thinks about it, it makes sense that the positions on the board matter. It is unclear, however, if following the opponent is the only good way of using this information. Most likely also other heuristics based on the positions of the player and the opponent could be constructed which could help winning games, like keeping in the center of the board and could be worth an additional study.
 
 \subsection{Analyze the search depth your agent achieves using your custom heuristic. Does search speed matter more or less than accuracy to the performance of your heuristic?}
 
-For this we take a look at the results of our ``best'' heuristic, the ``deeper'' baseline algorithm. There we know that it is more expensive than the classical baseline heuristic. However, also with a search depth of 3 it achieves way better performance than the baseline heuristics with a search depth of 4. The search depth of 5 does beat our custom heuristic with a win percentage of 65.1\%, but, as mentioned Section \ref{sec:search_depth}, the search depth of 5 already has troubles staying below the 150ms per move. So from these experiments, my answer would be: It is worth developing a good heuristic function, even when it is a bit more costly, because it can beat just brute forcing the problem with higher search depths.
+For this we take a look at the results of our ``best'' heuristic, the ``deeper'' baseline algorithm. There we know that it is more expensive than the classical baseline heuristic. However, also with a search depth of 3 it achieves way better performance than the baseline heuristics with a search depth of 4. The search depth of 5 does beat our custom heuristic with a win percentage of 65.1\%, but, as mentioned Section \ref{sec:search_depth}, the search depth of 5 already has troubles staying below the 150ms per move. So from these experiments, my answer would be: It is worth developing a good heuristic function, even when it is a bit more costly, because it can beat brute forcing the problem with higher search depths, which is definitely very costly.
 
 % \appendix
 
