@@ -332,7 +332,7 @@ HEURISTICS_FUNCTIONS = {
 
 SEED = None
 
-HEURISTIC_FUNC = heuristics_liberties_and_keep_enemy_close_11
+HEURISTIC_FUNC = heuristics_liberties
 
 
 class CustomPlayer(DataPlayer):
@@ -382,10 +382,10 @@ class CustomPlayer(DataPlayer):
             next_move = self.get_opening_move(state)
         else:
             start = timeit.default_timer()
-            next_move = self.get_next_move(state, max_depth=3)
+            next_move = self.get_next_move(state, max_depth=4)
             end = timeit.default_timer()
             took_ms = (end - start) * 1000
-            if took_ms > 950:
+            if took_ms > 145:
                 print("Search took {}ms".format(took_ms, 2))
         self.queue.put(next_move)
 
